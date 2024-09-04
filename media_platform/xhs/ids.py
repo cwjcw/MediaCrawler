@@ -9,8 +9,8 @@ driver.get('http://xhslink.com/C/AHPEex')
 
 # 获取当前页面的 URL
 current_url = driver.current_url
-print('链接是：')
-print('aaa' + current_url)
+# print('链接是：')
+# print('aaa' + current_url)
 
 ############################################## 解析 ###########################################################
 # 正则表达式模式
