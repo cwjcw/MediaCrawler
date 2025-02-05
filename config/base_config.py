@@ -10,14 +10,14 @@
 
 
 # 基础配置
-PLATFORM = "xhs"
-KEYWORDS = "泉州簪花"  # 关键词搜索配置，以英文逗号分隔
-LOGIN_TYPE = "phone"  # qrcode or phone or cookie
+PLATFORM = "dy"
+KEYWORDS = "祛眼袋"  # 关键词搜索配置，以英文逗号分隔
+LOGIN_TYPE = "qrcode"  # qrcode or phone or cookie
 COOKIES = ""
 # 具体值参见media_platform.xxx.field下的枚举值，暂时只支持小红书
 SORT_TYPE = "popularity_descending"
-# 具体值参见media_platform.xxx.field下的枚举值，暂时只支持抖音
-PUBLISH_TIME_TYPE = 0
+# 具体值参见media_platform.xxx.field下的枚举值，暂时只支持抖音，0综合排序，1最多点赞，2最新发布
+PUBLISH_TIME_TYPE = 1
 CRAWLER_TYPE = (
     "search"  # 爬取类型，search(关键词搜索) | detail(帖子详情)| creator(创作者主页数据)
 )
@@ -28,7 +28,7 @@ UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML,
 ENABLE_IP_PROXY = False
 
 # 未启用代理时的最大爬取间隔，单位秒（暂时仅对XHS有效）
-CRAWLER_MAX_SLEEP_SEC = 2
+CRAWLER_MAX_SLEEP_SEC = 10
 
 # 代理IP池数量
 IP_PROXY_POOL_COUNT = 2
