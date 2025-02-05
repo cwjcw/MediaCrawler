@@ -14,8 +14,8 @@ PLATFORM = "xhs"
 KEYWORDS = "伯爵旅拍"  # 关键词搜索配置，以英文逗号分隔
 LOGIN_TYPE = "qrcode"  # qrcode or phone or cookie
 COOKIES = ""
-# 具体值参见media_platform.xxx.field下的枚举值，暂时只支持小红书
-SORT_TYPE = "popularity_descending"
+# 具体值参见media_platform.xxx.field下的枚举值，暂时只支持小红书 三种方式general，popularity_descending，time_descending
+SORT_TYPE = "general"
 # 具体值参见media_platform.xxx.field下的枚举值，暂时只支持抖音，0综合排序，1最多点赞，2最新发布
 PUBLISH_TIME_TYPE = 1
 CRAWLER_TYPE = (
@@ -64,7 +64,7 @@ MAX_CONCURRENCY_NUM = 1
 ENABLE_GET_IMAGES = False
 
 # 是否开启爬评论模式, 默认开启爬评论
-ENABLE_GET_COMMENTS = True
+ENABLE_GET_COMMENTS = False
 
 # 爬取一级评论的数量控制(单视频/帖子)
 CRAWLER_MAX_COMMENTS_COUNT_SINGLENOTES = 10
