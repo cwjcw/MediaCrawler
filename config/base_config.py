@@ -10,9 +10,9 @@
 
 
 # 基础配置
-PLATFORM = "dy"
-KEYWORDS = "祛眼袋"  # 关键词搜索配置，以英文逗号分隔
-LOGIN_TYPE = "qrcode"  # qrcode or phone or cookie
+PLATFORM = "xhs"
+KEYWORDS = "婚纱旅拍"  # 关键词搜索配置，以英文逗号分隔
+LOGIN_TYPE = "phone"  # qrcode or phone or cookie
 COOKIES = ""
 # 具体值参见media_platform.xxx.field下的枚举值，暂时只支持小红书
 SORT_TYPE = "popularity_descending"
