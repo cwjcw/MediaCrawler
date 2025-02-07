@@ -11,7 +11,7 @@
 
 # 基础配置
 PLATFORM = "xhs"
-KEYWORDS = "铂爵旅拍"  # 关键词搜索配置，以英文逗号分隔
+KEYWORDS = "伯爵旅拍"  # 关键词搜索配置，以英文逗号分隔
 LOGIN_TYPE = "qrcode"  # qrcode or phone or cookie
 COOKIES = ""
 # 具体值参见media_platform.xxx.field下的枚举值，暂时只支持小红书 三种方式general，popularity_descending，time_descending

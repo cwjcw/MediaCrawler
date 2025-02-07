@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首页 - 系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">首页</span>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-light">登出</a>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <h2>欢迎, {{ session.get('user_id') }}!</h2>
+        <p>这是普通用户的首页。</p>
+        {% if session.get('role') == 'admin' %}
+            <a href="{{ url_for('admin') }}" class="btn btn-warning">进入管理页面</a>
+        {% endif %}
+    </div>
+
+</body>
+</html>
