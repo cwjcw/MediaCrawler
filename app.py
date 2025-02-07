@@ -4,6 +4,11 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from datetime import datetime
 import os
+from flask import Response
+import csv
+from io import StringIO
+from flask_login import UserMixin
+
 
 # 获取 instance/secret_key.txt 的完整路径
 INSTANCE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "instance")
@@ -37,13 +42,23 @@ login_manager.login_view = "login"
 app.secret_key = get_secret_key()
 
 # 用户表模型
-class User(UserMixin, db.Model):
+class User(UserMixin, db.Model):  # 继承 UserMixin，支持 Flask-Login
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(150), nullable=False)
     role = db.Column(db.String(50), nullable=False)
     employee_id = db.Column(db.String(50), nullable=False)
     name = db.Column(db.String(100), nullable=False)
+
+    # 确保 Flask-Login 需要的方法
+    def is_active(self):
+        return True  # 所有用户默认都是活跃的
+
+    def is_authenticated(self):
+        return True  # 用户默认已认证
+
+    def is_anonymous(self):
+        return False  # 不是匿名用户
 
 # 用户登录记录表
 class UserLoginLog(db.Model):
@@ -87,19 +102,28 @@ def login():
 
     return render_template('login.html')
 
+# admin.html中，用户登录历史记录相关
 @app.route('/admin', methods=['GET', 'POST'])
 @login_required
 def admin_dashboard():
     if current_user.role != 'admin':
         return redirect(url_for('index'))
 
+    # 获取当前页数（默认第1页）
+    page = request.args.get('page', 1, type=int)
+    per_page = 50  # 每页 50 条记录
+
+    # 获取所有用户
     users = User.query.all()
-    login_logs = UserLoginLog.query.order_by(UserLoginLog.login_time.desc()).all()
+
+    # 获取登录历史，并分页
+    login_logs_paginated = UserLoginLog.query.order_by(UserLoginLog.login_time.desc()).paginate(page=page, per_page=per_page, error_out=False)
 
     if request.method == 'POST':
         action = request.form.get('action')
         user_id = request.form.get('user_id')
 
+        # 删除用户
         if action == 'delete' and user_id:
             try:
                 user_id = int(user_id)
@@ -113,6 +137,7 @@ def admin_dashboard():
             except ValueError:
                 flash('无效的用户ID')
 
+        # 编辑用户
         elif action == 'edit' and user_id:
             try:
                 user_id = int(user_id)
@@ -123,10 +148,10 @@ def admin_dashboard():
                     user.employee_id = request.form.get('employee_id')
                     user.name = request.form.get('name')
                     db.session.commit()
-                    
-                    # 如果是当前用户被修改，重新加载会话
+
+                    # 如果是当前用户被修改，重新登录用户，防止会话失效
                     if user.id == current_user.id:
-                        login_user(user)  # 重新登录用户，防止会话失效
+                        login_user(user)
 
                     flash('用户信息已更新！')
                 else:
@@ -134,6 +159,7 @@ def admin_dashboard():
             except ValueError:
                 flash('无效的用户ID')
 
+        # 添加用户
         elif action == 'add':
             username = request.form['username']
             password = generate_password_hash(request.form['password'])
@@ -147,14 +173,61 @@ def admin_dashboard():
 
         return redirect(url_for('admin_dashboard'))
 
-    return render_template('admin.html', users=users, login_logs=login_logs)
+    return render_template(
+        'admin.html',
+        users=users,
+        login_logs=login_logs_paginated.items,  # 当前页的日志记录
+        page=page,  # 传递当前页码
+        has_next=login_logs_paginated.has_next  # 是否有下一页
+    )
 
+# 用户登出
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
     flash("您已成功登出！", "info")
     return redirect(url_for('login'))
+
+# 导出用户登录历史记录
+@app.route('/export_login_history', methods=['POST'])
+@login_required
+def export_login_history():
+    if current_user.role != 'admin':
+        return redirect(url_for('index'))
+
+    # 获取所有登录记录
+    login_logs = UserLoginLog.query.order_by(UserLoginLog.login_time.desc()).all()
+
+    # 创建 CSV 数据
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["登录时间", "用户名", "IP地址", "浏览器"])
+    
+    for log in login_logs:
+        writer.writerow([log.login_time, log.user.username, log.ip_address, log.user_agent])
+
+    # 解决 Excel 乱码问题：使用 utf-8-sig
+    response = Response(output.getvalue().encode('utf-8-sig'), mimetype="text/csv")
+    response.headers["Content-Disposition"] = "attachment; filename=login_history.csv"
+    return response
+
+# 删除用户登录历史记录
+@app.route('/delete_login_history', methods=['POST'])
+@login_required
+def delete_login_history():
+    if current_user.role != 'admin':
+        return redirect(url_for('index'))
+
+    log_ids = request.form.getlist('log_ids')
+    
+    if log_ids:
+        UserLoginLog.query.filter(UserLoginLog.id.in_(log_ids)).delete(synchronize_session=False)
+        db.session.commit()
+        flash("选定的登录记录已删除！")
+
+    return redirect(url_for('admin_dashboard'))
+
 
 if __name__ == '__main__':
 

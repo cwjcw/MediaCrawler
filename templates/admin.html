@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理员页面</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function showSection(sectionId) {
+            document.querySelectorAll('.section-content').forEach(section => {
+                section.style.display = 'none';
+            });
+            document.getElementById(sectionId).style.display = 'block';
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            document.getElementById('select-all').addEventListener('click', function () {
+                var checkboxes = document.querySelectorAll('input[name="log_ids"]');
+                for (var checkbox of checkboxes) {
+                    checkbox.checked = this.checked;
+                }
+            });
+        });
+    </script>
 </head>
 <body>
 
@@ -15,136 +33,120 @@
         </div>
     </nav>
 
-    <div class="container mt-5">
-        <h2>用户管理</h2>
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <div class="col-md-2">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" onclick="showSection('add-user')">添加用户</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection('view-users')">用户查看</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection('login-history')">用户登录历史</a>
+                    </li>
+                </ul>
+            </div>
 
-        <!-- 添加用户表单 -->
-        <form method="POST" action="{{ url_for('admin_dashboard') }}">
-            <h4>添加新用户</h4>
-            <div class="mb-3">
-                <label for="username" class="form-label">用户名</label>
-                <input type="text" class="form-control" id="username" name="username" required>
-            </div>
-            <div class="mb-3">
-                <label for="password" class="form-label">密码</label>
-                <input type="password" class="form-control" id="password" name="password" required>
-            </div>
-            <div class="mb-3">
-                <label for="role" class="form-label">角色</label>
-                <select class="form-select" id="role" name="role" required>
-                    <option value="admin">管理员</option>
-                    <option value="user">普通用户</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label for="employee_id" class="form-label">员工编号</label>
-                <input type="text" class="form-control" id="employee_id" name="employee_id" required>
-            </div>
-            <div class="mb-3">
-                <label for="name" class="form-label">姓名</label>
-                <input type="text" class="form-control" id="name" name="name" required>
-            </div>
-            <button type="submit" class="btn btn-primary" name="action" value="add">添加用户</button>
-        </form>
-
-        <hr>
-
-        <!-- 用户列表表格 -->
-        <h4>所有用户</h4>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>用户名</th>
-                    <th>角色</th>
-                    <th>员工编号</th>
-                    <th>姓名</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user in users %}
-                <tr>
-                    <td>{{ user.id }}</td>
-                    <td>{{ user.username }}</td>
-                    <td>{{ user.role }}</td>
-                    <td>{{ user.employee_id }}</td>
-                    <td>{{ user.name }}</td>
-                    <td>
-                        <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editModal{{ user.id }}">编辑</button>
-                        <form method="POST" action="{{ url_for('admin_dashboard') }}" style="display:inline;">
-                            <input type="hidden" name="user_id" value="{{ user.id }}">
-                            <button type="submit" class="btn btn-danger" name="action" value="delete">删除</button>
-                        </form>
-                    </td>
-                </tr>
-
-                <!-- 编辑用户模态框 -->
-                <div class="modal fade" id="editModal{{ user.id }}" tabindex="-1" aria-labelledby="editModalLabel{{ user.id }}" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="editModalLabel{{ user.id }}">编辑用户</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <form method="POST" action="{{ url_for('admin_dashboard') }}">
-                                    <input type="hidden" name="user_id" value="{{ user.id }}">
-                                    <div class="mb-3">
-                                        <label class="form-label">用户名</label>
-                                        <input type="text" class="form-control" name="username" value="{{ user.username }}" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">角色</label>
-                                        <select class="form-select" name="role" required>
-                                            <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>管理员</option>
-                                            <option value="user" {% if user.role == 'user' %}selected{% endif %}>普通用户</option>
-                                        </select>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">员工编号</label>
-                                        <input type="text" class="form-control" name="employee_id" value="{{ user.employee_id }}" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label">姓名</label>
-                                        <input type="text" class="form-control" name="name" value="{{ user.name }}" required>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary" name="action" value="edit">保存更改</button>
-                                </form>
-                            </div>
+            <!-- 右侧内容区 -->
+            <div class="col-md-10">
+                <!-- 添加用户 -->
+                <div id="add-user" class="section-content">
+                    <h2>添加用户</h2>
+                    <form method="POST" action="{{ url_for('admin_dashboard') }}">
+                        <div class="mb-3">
+                            <label class="form-label">用户名</label>
+                            <input type="text" class="form-control" name="username" required>
                         </div>
-                    </div>
+                        <div class="mb-3">
+                            <label class="form-label">密码</label>
+                            <input type="password" class="form-control" name="password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">角色</label>
+                            <select class="form-select" name="role" required>
+                                <option value="admin">管理员</option>
+                                <option value="user">普通用户</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">员工编号</label>
+                            <input type="text" class="form-control" name="employee_id" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">姓名</label>
+                            <input type="text" class="form-control" name="name" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" name="action" value="add">添加用户</button>
+                    </form>
                 </div>
-                {% endfor %}
-            </tbody>
-        </table>
 
-        <hr>
+                <!-- 用户查看 -->
+                <div id="view-users" class="section-content" style="display: none;">
+                    <h2>所有用户</h2>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>用户名</th>
+                                <th>角色</th>
+                                <th>员工编号</th>
+                                <th>姓名</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>{{ user.id }}</td>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.role }}</td>
+                                <td>{{ user.employee_id }}</td>
+                                <td>{{ user.name }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
 
-        <!-- 登录记录表 -->
-        <h4>用户登录记录</h4>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>登录时间</th>
-                    <th>用户名</th>
-                    <th>IP地址</th>
-                    <th>浏览器</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for log in login_logs %}
-                <tr>
-                    <td>{{ log.login_time }}</td>
-                    <td>{{ log.user.username }}</td>
-                    <td>{{ log.ip_address }}</td>
-                    <td>{{ log.user_agent }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                <!-- 用户登录历史 -->
+                <div id="login-history" class="section-content" style="display: none;">
+                    <h2>用户登录历史</h2>
+                    <div class="d-flex mb-3">
+                        <form method="POST" action="{{ url_for('export_login_history') }}">
+                            <button type="submit" class="btn btn-sm btn-success me-2">导出为 CSV</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('delete_login_history') }}">
+                            <button type="submit" class="btn btn-sm btn-danger">删除选中记录</button>
+                        </form>
+                    </div>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="select-all"></th>
+                                <th>登录时间</th>
+                                <th>用户名</th>
+                                <th>IP地址</th>
+                                <th>浏览器</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in login_logs %}
+                            <tr>
+                                <td><input type="checkbox" name="log_ids" value="{{ log.id }}"></td>
+                                <td>{{ log.login_time }}</td>
+                                <td>{{ log.user.username }}</td>
+                                <td>{{ log.ip_address }}</td>
+                                <td>{{ log.user_agent }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
