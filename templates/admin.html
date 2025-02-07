@@ -13,15 +13,6 @@
             });
             document.getElementById(sectionId).style.display = 'block';
         }
-
-        document.addEventListener("DOMContentLoaded", function () {
-            document.getElementById('select-all').addEventListener('click', function () {
-                var checkboxes = document.querySelectorAll('input[name="log_ids"]');
-                for (var checkbox of checkboxes) {
-                    checkbox.checked = this.checked;
-                }
-            });
-        });
     </script>
 </head>
 <body>
@@ -94,6 +85,7 @@
                                 <th>角色</th>
                                 <th>员工编号</th>
                                 <th>姓名</th>
+                                <th>操作</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -104,6 +96,13 @@
                                 <td>{{ user.role }}</td>
                                 <td>{{ user.employee_id }}</td>
                                 <td>{{ user.name }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning" onclick="editUser('{{ user.id }}', '{{ user.username }}', '{{ user.role }}', '{{ user.employee_id }}', '{{ user.name }}')">编辑</button>
+                                    <form method="POST" action="{{ url_for('admin_dashboard') }}" style="display:inline;">
+                                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                                        <button type="submit" class="btn btn-sm btn-danger" name="action" value="delete">删除</button>
+                                    </form>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -147,6 +146,5 @@
             </div>
         </div>
     </div>
-
 </body>
 </html>
