@@ -16,7 +16,7 @@
     </nav>
 
     <div class="container mt-5">
-        <h2>欢迎, {{ session.get('user_id') }}!</h2>
+        <h2>欢迎, {{ session['username'] }}!</h2>
         <p>这是普通用户的首页。</p>
         {% if session.get('role') == 'admin' %}
             <a href="{{ url_for('admin') }}" class="btn btn-warning">进入管理页面</a>

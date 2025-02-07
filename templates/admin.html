@@ -13,6 +13,28 @@
             });
             document.getElementById(sectionId).style.display = 'block';
         }
+
+        function editUser(userId, username, role, employeeId, name) {
+            document.getElementById('edit-user-id').value = userId;
+            document.getElementById('edit-username').value = username;
+            document.getElementById('edit-role').value = role;
+            document.getElementById('edit-employee-id').value = employeeId;
+            document.getElementById('edit-name').value = name;
+
+            // 确保 Bootstrap 模态框正确显示
+            var editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+            editModal.show();
+        }
+
+        // 页面加载完成后自动隐藏 Flash 消息
+        document.addEventListener("DOMContentLoaded", function () {
+            setTimeout(function () {
+                let alertBox = document.getElementById("flash-message");
+                if (alertBox) {
+                    alertBox.style.display = "none";
+                }
+            }, 3000); // 3 秒后自动隐藏
+        });
     </script>
 </head>
 <body>
@@ -23,6 +45,17 @@
             <a href="{{ url_for('logout') }}" class="btn btn-outline-light">登出</a>
         </div>
     </nav>
+
+    <!-- Flash 消息提示 -->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div id="flash-message" class="alert alert-info text-center">
+                {% for message in messages %}
+                    {{ message }}
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
 
     <div class="container-fluid mt-4">
         <div class="row">
@@ -97,7 +130,10 @@
                                 <td>{{ user.employee_id }}</td>
                                 <td>{{ user.name }}</td>
                                 <td>
-                                    <button class="btn btn-sm btn-warning" onclick="editUser('{{ user.id }}', '{{ user.username }}', '{{ user.role }}', '{{ user.employee_id }}', '{{ user.name }}')">编辑</button>
+                                    <button class="btn btn-sm btn-warning" 
+                                            onclick="editUser('{{ user.id }}', '{{ user.username|escape }}', '{{ user.role }}', '{{ user.employee_id }}', '{{ user.name|escape }}')">
+                                        编辑
+                                    </button>
                                     <form method="POST" action="{{ url_for('admin_dashboard') }}" style="display:inline;">
                                         <input type="hidden" name="user_id" value="{{ user.id }}">
                                         <button type="submit" class="btn btn-sm btn-danger" name="action" value="delete">删除</button>
@@ -109,42 +145,38 @@
                     </table>
                 </div>
 
-                <!-- 用户登录历史 -->
-                <div id="login-history" class="section-content" style="display: none;">
-                    <h2>用户登录历史</h2>
-                    <div class="d-flex mb-3">
-                        <form method="POST" action="{{ url_for('export_login_history') }}">
-                            <button type="submit" class="btn btn-sm btn-success me-2">导出为 CSV</button>
-                        </form>
-                        <form method="POST" action="{{ url_for('delete_login_history') }}">
-                            <button type="submit" class="btn btn-sm btn-danger">删除选中记录</button>
-                        </form>
-                    </div>
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th><input type="checkbox" id="select-all"></th>
-                                <th>登录时间</th>
-                                <th>用户名</th>
-                                <th>IP地址</th>
-                                <th>浏览器</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for log in login_logs %}
-                            <tr>
-                                <td><input type="checkbox" name="log_ids" value="{{ log.id }}"></td>
-                                <td>{{ log.login_time }}</td>
-                                <td>{{ log.user.username }}</td>
-                                <td>{{ log.ip_address }}</td>
-                                <td>{{ log.user_agent }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑用户模态框 -->
+    <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editUserModalLabel">编辑用户</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{{ url_for('admin_dashboard') }}">
+                        <input type="hidden" name="user_id" id="edit-user-id">
+                        <div class="mb-3">
+                            <label class="form-label">用户名</label>
+                            <input type="text" class="form-control" name="username" id="edit-username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">角色</label>
+                            <select class="form-select" name="role" id="edit-role" required>
+                                <option value="admin">管理员</option>
+                                <option value="user">普通用户</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary" name="action" value="edit">保存修改</button>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
+
 </body>
 </html>

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash,session
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -7,7 +7,7 @@ import os
 from flask import Response
 import csv
 from io import StringIO
-from flask_login import UserMixin
+from flask_migrate import Migrate
 
 
 # 获取 instance/secret_key.txt 的完整路径
@@ -40,9 +40,10 @@ login_manager.login_view = "login"
 
 # 设置 Flask 的 SECRET_KEY
 app.secret_key = get_secret_key()
+migrate = Migrate(app, db)  # 绑定 Migrate 到 Flask 和 SQLAlchemy
 
 # 用户表模型
-class User(UserMixin, db.Model):  # 继承 UserMixin，支持 Flask-Login
+class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(150), nullable=False)
@@ -50,7 +51,16 @@ class User(UserMixin, db.Model):  # 继承 UserMixin，支持 Flask-Login
     employee_id = db.Column(db.String(50), nullable=False)
     name = db.Column(db.String(100), nullable=False)
 
-    # 确保 Flask-Login 需要的方法
+    # 这里用 `back_populates` 代替 `backref`
+    login_logs = db.relationship('UserLoginLog', back_populates='user', cascade="all, delete-orphan", lazy=True)
+
+    # 确保角色合法
+    def set_role(self, role):
+        if role not in ['admin', 'user']:
+            raise ValueError("角色必须是 'admin' 或 'user'")
+        self.role = role
+
+    # Flask-Login 需要的方法
     def is_active(self):
         return True  # 所有用户默认都是活跃的
 
@@ -60,14 +70,23 @@ class User(UserMixin, db.Model):  # 继承 UserMixin，支持 Flask-Login
     def is_anonymous(self):
         return False  # 不是匿名用户
 
+    def __repr__(self):
+        return f"<User {self.username}, Role: {self.role}>"
+
+
 # 用户登录记录表
 class UserLoginLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    login_time = db.Column(db.DateTime, default=datetime.utcnow)  # 登录时间
-    ip_address = db.Column(db.String(50))  # 用户的IP地址
-    user_agent = db.Column(db.String(255))  # 用户的User-Agent (浏览器信息)
-    user = db.relationship('User', backref=db.backref('login_logs', lazy=True))  # 外键关系
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete="CASCADE"), nullable=False)
+    login_time = db.Column(db.DateTime, default=datetime.utcnow)
+    ip_address = db.Column(db.String(50), nullable=False, default="0.0.0.0")
+    user_agent = db.Column(db.String(255), nullable=True)
+
+    # 这里去掉了 `backref`，改为 `back_populates`
+    user = db.relationship('User', back_populates='login_logs')
+
+    def __repr__(self):
+        return f"<UserLoginLog user_id={self.user_id}, time={self.login_time}, IP={self.ip_address}>"
 
 # 加载用户
 @login_manager.user_loader
@@ -75,9 +94,18 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 @app.route('/')
-def index():
-    return redirect(url_for('login'))  # 重定向到登录页面
+def home():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))  # 已登录用户跳转到 index.html
+    return redirect(url_for('login'))  # 未登录用户跳转到 login.html
 
+@app.route('/index')
+@login_required
+def index():
+    return render_template('index.html', user_id=session.get('username'), role=session.get('role'))
+
+
+# 用户登录
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -86,21 +114,33 @@ def login():
         user = User.query.filter_by(username=username).first()
 
         if user and check_password_hash(user.password, password):
-            # 登录成功，记录登录日志
-            ip_address = request.remote_addr  # 获取IP地址
-            user_agent = request.headers.get('User-Agent')  # 获取浏览器信息
+            login_user(user)  # Flask-Login 记录登录状态
 
-            # 保存登录记录到数据库
-            login_log = UserLoginLog(user_id=user.id, ip_address=ip_address, user_agent=user_agent)
-            db.session.add(login_log)
-            db.session.commit()
+            # 存储用户信息到 session
+            session['user_id'] = user.id
+            session['username'] = user.name  # 这里确保存储的是姓名
+            session['role'] = user.role
 
-            login_user(user)
-            return redirect(url_for('admin_dashboard'))
+            # 记录用户登录日志（确保 user_id 不为空）
+            if user.id:
+                login_log = UserLoginLog(
+                    user_id=user.id,
+                    ip_address=request.remote_addr,
+                    user_agent=request.headers.get('User-Agent')
+                )
+                db.session.add(login_log)
+                db.session.commit()
+
+            # 判断角色并跳转
+            if user.role == 'admin':
+                return redirect(url_for('admin_dashboard'))
+            else:
+                return redirect(url_for('index'))  # 普通用户进入 index.html
         else:
-            flash('登录失败，用户名或密码错误。')
+            flash('用户名或密码错误！')
 
     return render_template('login.html')
+
 
 # admin.html中，用户登录历史记录相关
 @app.route('/admin', methods=['GET', 'POST'])
@@ -123,53 +163,75 @@ def admin_dashboard():
         action = request.form.get('action')
         user_id = request.form.get('user_id')
 
-        # 删除用户
-        if action == 'delete' and user_id:
-            try:
+        try:
+            # 删除用户（确保删除用户前，先删除其所有登录日志）
+            if action == 'delete' and user_id:
                 user_id = int(user_id)
                 user = User.query.get(user_id)
                 if user:
+                    # 先删除用户的所有登录日志
+                    UserLoginLog.query.filter_by(user_id=user.id).delete()
+
+                    # 再删除用户
                     db.session.delete(user)
                     db.session.commit()
-                    flash('用户已删除！')
+                    flash('用户及其登录记录已删除！')
                 else:
                     flash('用户不存在！')
-            except ValueError:
-                flash('无效的用户ID')
 
-        # 编辑用户
-        elif action == 'edit' and user_id:
-            try:
+            # 编辑用户
+            elif action == 'edit' and user_id:
                 user_id = int(user_id)
                 user = User.query.get(user_id)
                 if user:
-                    user.username = request.form.get('username')
-                    user.role = request.form.get('role')
-                    user.employee_id = request.form.get('employee_id')
-                    user.name = request.form.get('name')
-                    db.session.commit()
+                    new_username = request.form.get('username')
+                    new_role = request.form.get('role')
+                    new_employee_id = request.form.get('employee_id')
+                    new_name = request.form.get('name')
 
-                    # 如果是当前用户被修改，重新登录用户，防止会话失效
-                    if user.id == current_user.id:
-                        login_user(user)
+                    # 确保角色只能是 'admin' 或 'user'
+                    if new_role not in ['admin', 'user']:
+                        flash('无效的角色类型！')
+                    else:
+                        user.username = new_username
+                        user.role = new_role
+                        user.employee_id = new_employee_id
+                        user.name = new_name
+                        db.session.commit()
 
-                    flash('用户信息已更新！')
+                        # 如果修改的是当前登录用户的信息，重新登录用户，防止会话失效
+                        if user.id == current_user.id:
+                            login_user(user)
+
+                        flash('用户信息已更新！')
                 else:
                     flash('用户不存在！')
-            except ValueError:
-                flash('无效的用户ID')
 
-        # 添加用户
-        elif action == 'add':
-            username = request.form['username']
-            password = generate_password_hash(request.form['password'])
-            role = request.form['role']
-            employee_id = request.form['employee_id']
-            name = request.form['name']
-            new_user = User(username=username, password=password, role=role, employee_id=employee_id, name=name)
-            db.session.add(new_user)
-            db.session.commit()
-            flash('新用户已添加！')
+            # 添加用户
+            elif action == 'add':
+                username = request.form['username']
+                password = generate_password_hash(request.form['password'])
+                role = request.form['role']
+                employee_id = request.form['employee_id']
+                name = request.form['name']
+
+                # 确保用户名唯一
+                existing_user = User.query.filter_by(username=username).first()
+                if existing_user:
+                    flash('用户名已存在！')
+                elif role not in ['admin', 'user']:
+                    flash('无效的角色类型！')
+                else:
+                    new_user = User(username=username, password=password, role=role, employee_id=employee_id, name=name)
+                    db.session.add(new_user)
+                    db.session.commit()
+                    flash('新用户已添加！')
+
+        except ValueError:
+            flash('无效的用户ID')
+        except Exception as e:
+            db.session.rollback()  # 发生错误时回滚事务
+            flash(f'操作失败: {str(e)}')
 
         return redirect(url_for('admin_dashboard'))
 
@@ -180,6 +242,7 @@ def admin_dashboard():
         page=page,  # 传递当前页码
         has_next=login_logs_paginated.has_next  # 是否有下一页
     )
+
 
 # 用户登出
 @app.route('/logout')
