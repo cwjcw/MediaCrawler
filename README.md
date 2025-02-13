@@ -32,7 +32,7 @@
 | B 站   | ✅          | ✅              | ✅        | ✅              | ✅          | ✅        | ✅              |
 | 微博   | ✅          | ✅              | ✅        | ✅              | ✅          | ✅        | ✅              |
 | 贴吧   | ✅          | ✅              | ✅        | ✅              | ✅          | ✅        | ✅              |
-| 知乎   | ✅          | ❌              | ✅        | ✅              | ✅          | ✅        | ✅              |
+| 知乎   | ✅          | ✅              | ✅        | ✅              | ✅          | ✅        | ✅              |
 
 ### MediaCrawlerPro重磅发布啦！！！
 > 主打学习成熟项目的架构设计，不仅仅是爬虫，Pro中的其他代码设计思路也是值得学习，欢迎大家关注！！！
@@ -44,6 +44,7 @@
 - 代码重构优化，更加易读易维护（解耦JS签名逻辑）
 - 代码质量更高，对于构建更大型的爬虫项目更加友好
 - 完美的架构设计，更加易扩展，源码学习的价值更大
+- Pro中新增全新的自媒体视频下载器桌面端软件（全栈项目适合学习）
 
 
 # 安装部署方法
@@ -111,7 +112,9 @@
 > [MediaCrawler在线文档](https://nanmicoder.github.io/MediaCrawler/)
 > 
 
-# 知识付费服务
+# 作者提供的知识服务
+> 如果想快速入门和学习该项目的使用、源码架构设计等、学习编程技术、亦或者想了解MediaCrawlerPro的源代码设计可以看下我的知识付费栏目。
+
 [作者的知识付费栏目介绍](https://nanmicoder.github.io/MediaCrawler/%E7%9F%A5%E8%AF%86%E4%BB%98%E8%B4%B9%E4%BB%8B%E7%BB%8D.html)
 
 # 项目微信交流群
@@ -119,6 +122,7 @@
 [加入微信交流群](https://nanmicoder.github.io/MediaCrawler/%E5%BE%AE%E4%BF%A1%E4%BA%A4%E6%B5%81%E7%BE%A4.html)
   
 # 感谢下列Sponsors对本仓库赞助支持
+- <a href="https://www.ipwo.net/?ref=mediacrawler">【IPWO住宅代理】免费流量测试，9000万+海外纯净真实住宅IP，全球覆盖，高品质代理服务提供商</a>
 - <a href="https://sider.ai/ad-land-redirect?source=github&p1=mi&p2=kk">【Sider】全网最火的ChatGPT插件，我也免费薅羊毛用了快一年了，体验拉满。</a>
 
 成为赞助者，可以将您产品展示在这里，每天获得大量曝光，联系作者微信：yzglan 或 email：relakkes@gmail.com
